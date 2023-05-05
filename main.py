@@ -55,10 +55,10 @@ def gpt3_move(board, max_tokens, retries):
         moves_history = "No moves have been made yet."
 
     for _ in range(retries):
-        start_prompt = f"You are a chess bot, and you can ONLY reply in UCI notation. What is the best response in the current position? The game history is: {moves_history}. For example, 'd2d4'."
+        start_prompt = f"You are a chess bot, and you can ONLY reply in UCI notation. What is the best response in the current position? The game history is: {moves_history}. For example, 'd2d4' do not use punctuation!"
         prompt = f"Best response in the current position. The game history is: {moves_history}"
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4",
             messages=[
                 {"role": "system", "content": start_prompt},
                 {"role": "user", "content": prompt}
@@ -138,7 +138,7 @@ games_per_strength = 1
 max_tokens = 100
 response_tokens = 100
 retries = 1
-cost_per_1000_tokens = 0.002
+cost_per_1000_tokens = 0.06
 cost_per_token = cost_per_1000_tokens/1000
 
 token_usage = estimate_token_usage(
