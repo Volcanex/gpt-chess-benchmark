@@ -74,7 +74,7 @@ def gpt3_move(board, max_tokens, retries):
         # Print the response
         print(prompt)
         print(f"Response: {response['choices'][0]['message']['content']}")
-        print(f"Move: {move_str}")  # Print the move
+        #print(f"Move: {move_str}")  # Print the move
 
         try:
             move = chess.Move.from_uci(move_str)
@@ -89,14 +89,11 @@ def gpt3_move(board, max_tokens, retries):
     legal_moves = list(board.legal_moves)
     return random.choice(legal_moves), response['usage']['total_tokens']
 
-
-
-
-def test_ai_elo(ai_move_func, initial_strength, increment, games_per_strength, max_tokens, retries):
+def test_ai_elo(ai_move_func, initial_strength, max_strength, increment, games_per_strength, max_tokens, retries):
     results = []
     strength = initial_strength
 
-    while strength <= 3000:
+    while strength <= max_strength:
         wins = 0
         losses = 0
         draws = 0
@@ -107,8 +104,6 @@ def test_ai_elo(ai_move_func, initial_strength, increment, games_per_strength, m
 
             # Print the PGN of the game
             print(game_pgn)
-
-            result = play_game(ai_move_func, strength, max_tokens, retries)
 
             if result == "1-0":
                 wins += 1
@@ -132,8 +127,9 @@ def estimate_token_usage(initial_strength, increment, games_per_strength, max_to
     return total_tokens
 
 
-initial_strength = 100
-increment = 1000
+initial_strength = 0
+max_strength = 500
+increment = 250
 games_per_strength = 1
 max_tokens = 100
 response_tokens = 100
@@ -156,7 +152,7 @@ if input("Type y to Continue? Be fucking careful!") != "y":
     exit()
 
 # Test the AI's Elo rating
-results = test_ai_elo(gpt3_move, initial_strength, increment,
+results = test_ai_elo(gpt3_move, initial_strength, max_strength, increment,
                       games_per_strength, max_tokens, retries)
 
 # Print the results
