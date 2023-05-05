@@ -58,7 +58,7 @@ def gpt3_move(board, max_tokens, retries):
         start_prompt = f"You are a chess bot, and you can ONLY reply in UCI notation. What is the best response in the current position? The game history is: {moves_history}. For example, 'd2d4' do not use punctuation!"
         prompt = f"Best response in the current position. The game history is: {moves_history}"
         response = openai.ChatCompletion.create(
-            model="gpt-4",
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": start_prompt},
                 {"role": "user", "content": prompt}
@@ -90,33 +90,23 @@ def gpt3_move(board, max_tokens, retries):
     return random.choice(legal_moves), response['usage']['total_tokens']
 
 def test_ai_elo(ai_move_func, initial_strength, max_strength, increment, games_per_strength, max_tokens, retries):
-    results = []
+    games = []
     strength = initial_strength
 
     while strength <= max_strength:
-        wins = 0
-        losses = 0
-        draws = 0
 
         for _ in range(games_per_strength):
             game_pgn = play_game(ai_move_func, strength, max_tokens, retries)
-            result = game_pgn.headers["Result"]
+            
 
             # Print the PGN of the game
             print(game_pgn)
 
-            if result == "1-0":
-                wins += 1
-            elif result == "0-1":
-                losses += 1
-            else:
-                draws += 1
+        games.append(game_pgn)
 
-        results.append({"strength": strength, "wins": wins,
-                       "losses": losses, "draws": draws})
         strength += increment
 
-    return results
+    return games
 
 
 def estimate_token_usage(initial_strength, increment, games_per_strength, max_tokens=50, response_tokens=10, retries=3):
@@ -148,14 +138,14 @@ if int(total_cost) > 50:
     print("Over $50, that's nuts I'm terminating the program for you :)")
     exit()
 
-if input("Type y to Continue? Be fucking careful!") != "y":
+if input("Type y to continue? Be fucking careful! ") != "y":
     exit()
 
 # Test the AI's Elo rating
-results = test_ai_elo(gpt3_move, initial_strength, max_strength, increment,
+games = test_ai_elo(gpt3_move, initial_strength, max_strength, increment,
                       games_per_strength, max_tokens, retries)
 
 # Print the results
-for result in results:
-    print(
-        f"Strength: {result['strength']}, Wins: {result['wins']}, Losses: {result['losses']}, Draws: {result['draws']}")
+for r in games:
+    result = r.headers["Result"]
+    print()
