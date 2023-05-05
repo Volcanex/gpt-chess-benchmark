@@ -13,7 +13,7 @@ print("Starting:")
 OPEN_AI_API_KEY = os.getenv('OPEN_AI_API_KEY')
 openai.api_key = OPEN_AI_API_KEY
 
-def play_game(ai_move_func, engine_strength, max_tokens, retries):
+def play_game(ai_move_func, engine_strength, max_tokens, retries, model):
     tokens_used = 0
 
     board = chess.Board()
@@ -29,7 +29,7 @@ def play_game(ai_move_func, engine_strength, max_tokens, retries):
 
     while not board.is_game_over():
         if board.turn == chess.WHITE:
-            move, tokens = ai_move_func(board, max_tokens, retries)
+            move, tokens = ai_move_func(board, max_tokens, retries, model)
             tokens_used += tokens
         else:
             moves = board.move_stack
@@ -49,7 +49,7 @@ def play_game(ai_move_func, engine_strength, max_tokens, retries):
     # Return the PGN
     return game
 
-def gpt3_move(board, max_tokens, retries):
+def gpt3_move(board, max_tokens, retries, model):
     moves_history = " ".join([move.uci() for move in board.move_stack])
     if moves_history == "":
         moves_history = "No moves have been made yet."
@@ -58,7 +58,6 @@ def gpt3_move(board, max_tokens, retries):
         start_prompt = f"You are a chess bot, and you can ONLY reply in UCI notation. What is the best response in the current position? The game history is: {moves_history}. For example, 'd2d4' do not use punctuation!"
         prompt = f"Best response in the current position. The game history is: {moves_history}"
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": start_prompt},
                 {"role": "user", "content": prompt}
@@ -89,14 +88,14 @@ def gpt3_move(board, max_tokens, retries):
     legal_moves = list(board.legal_moves)
     return random.choice(legal_moves), response['usage']['total_tokens']
 
-def test_ai_elo(ai_move_func, initial_strength, max_strength, increment, games_per_strength, max_tokens, retries):
+def test_ai_elo(ai_move_func, initial_strength, max_strength, increment, games_per_strength, max_tokens, retries, model):
     games = []
     strength = initial_strength
 
     while strength <= max_strength:
 
         for _ in range(games_per_strength):
-            game_pgn = play_game(ai_move_func, strength, max_tokens, retries)
+            game_pgn = play_game(ai_move_func, strength, max_tokens, retries, model)
             
 
             # Print the PGN of the game
@@ -116,7 +115,6 @@ def estimate_token_usage(initial_strength, increment, games_per_strength, max_to
     total_tokens = ai_moves * (max_tokens + response_tokens) * retries
     return total_tokens
 
-
 initial_strength = 0
 max_strength = 500
 increment = 250
@@ -126,6 +124,7 @@ response_tokens = 100
 retries = 1
 cost_per_1000_tokens = 0.06
 cost_per_token = cost_per_1000_tokens/1000
+model = "gpt-3.5-turbo"
 
 token_usage = estimate_token_usage(
     initial_strength, increment, games_per_strength, max_tokens=30, retries=retries)
