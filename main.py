@@ -5,6 +5,8 @@ import random
 import chess.pgn
 from dotenv import load_dotenv  # Add this import
 import os
+import json
+import os
 
 print("Starting:")
 
@@ -65,7 +67,8 @@ def gpt3_move(board, max_tokens, retries, model):
             max_tokens=max_tokens,
             n=1,
             stop=None,
-            temperature=0.5,
+            temperature=0,
+            model=model,
         )
 
         move_str = response['choices'][0]['message']['content'].strip()
@@ -142,9 +145,51 @@ if input("Type y to continue? Be fucking careful! ") != "y":
 
 # Test the AI's Elo rating
 games = test_ai_elo(gpt3_move, initial_strength, max_strength, increment,
-                      games_per_strength, max_tokens, retries)
+                      games_per_strength, max_tokens, retries, model)
 
 # Print the results
 for r in games:
     result = r.headers["Result"]
     print()
+
+def save_pgn_to_json(games, file_name, initial_strength, max_strength, increment, games_per_strength, max_tokens, retries):
+    games_data = {
+        "initial_strength": initial_strength,
+        "max_strength": max_strength,
+        "increment": increment,
+        "games_per_strength": games_per_strength,
+        "max_tokens": max_tokens,
+        "retries": retries,
+        "games": []
+    }
+
+    for game in games:
+        game_data = {
+            "White": game.headers["White"],
+            "Black": game.headers["Black"],
+            "Result": game.headers["Result"],
+            "PGN": str(game),
+            "Moves": []
+        }
+
+        for node in game.mainline():
+            move = node.move
+            game_data["Moves"].append(move.uci())
+
+        games_data["games"].append(game_data)
+
+    os.makedirs("results", exist_ok=True)
+
+    file_number = 0
+    file_base_name, file_extension = os.path.splitext(file_name)
+    output_file_name = file_name
+    while os.path.exists(os.path.join("results", output_file_name)):
+        output_file_name = f"{file_base_name}_{file_number}{file_extension}"
+        file_number += 1
+
+    with open(os.path.join("results", output_file_name), "w") as json_file:
+        json.dump(games_data, json_file, indent=4)
+
+# Save the games to a JSON file
+save_pgn_to_json(games, "results.json", initial_strength, max_strength, increment,
+                      games_per_strength, max_tokens, retries)
